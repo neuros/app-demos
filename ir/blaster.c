@@ -50,7 +50,7 @@ static void blaster_key(const char *key_name)
     fd = open(IR_BLASTER_DEV, O_RDWR);
     if(fd<0)
         return;
-    if((*key_name) < '9' && (*key_name) > '0')
+    if((*key_name) <= '9' && (*key_name) >= '0')
     {
         bls_dat = get_num_key((*key_name) - '0');
     }
@@ -90,8 +90,8 @@ static void add_number(unsigned char key)
 {
     if(strlen(channel) < CHANNEL_LEN)
     {
-        printf("%c", key_table[key - BASE]);
         channel[strlen(channel)] = key_table[key - BASE];
+        printf("%s\n", channel);
     }
 }
 
@@ -121,6 +121,6 @@ void blaster_act(unsigned char key)
 
 void blaster_init()
 {
-    printf("Please press the channel number that you want to test: ");
+    printf("Please press the channel number that you want to test then press ENTER:\n");
     memset(channel, 0, CHANNEL_LEN + 1);
 }

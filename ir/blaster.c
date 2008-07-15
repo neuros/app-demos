@@ -31,7 +31,7 @@
 #include "learning.h"
 
 #define CHECK_BLASTER_COMPLETE_CYCLE (20*1000)
-#define INTERVAL_OF_KEYS (200*1000)
+#define INTERVAL_OF_KEYS (450*1000)
 #define CHANNEL_LEN 10
 #define BASE KEY_1
 

@@ -50,6 +50,12 @@ typedef enum
 	FBS = DAVINCIFB_WINDOWS,
 } fb_plane_t;
 
+typedef enum
+{
+	FB_COMPONENT = DAVINCIFB_OUT_COMPONENT,
+	FB_COMPOSITE = DAVINCIFB_OUT_COMPOSITE,
+	FB_SVIDEO = DAVINCIFB_OUT_SVIDEO,
+} fb_vout_t;
 
 static char *fb_names[] = {
 	[FB_OSD0] = "dm_osd0_fb",
@@ -124,7 +130,7 @@ int fb_info_get(fb_t *fb)
 
 int fb_modes_get(fb_t *fb)
 {
-	/* open the sysfs device */
+	/* open the sysfs file for vid0 */
 	/* read the modes */
 	return 1;
 }
@@ -219,6 +225,32 @@ error:
 	close(fb->fd);
 	fb_delete(fb);
 	return NULL;
+}
+
+void fb_transp_set(fb_t *fb, int on)
+{
+	if (ioctl(fb->fd, FBIO_TRANSP, &on) < 0)
+	{
+		printf("couldn't set transparency to %d\n", on);
+		return;
+	}
+	else
+	{
+		fb_info_get(fb);
+	}
+}
+
+void fb_transp_solor_set(fb_t *fb, int color)
+{
+	if (ioctl(fb->fd, FBIO_TRANSP_COLOR, &color) < 0)
+	{
+		printf("couldn't set transparency color to %d\n", color);
+		return;
+	}
+	else
+	{
+		fb_info_get(fb);
+	}
 }
 
 void fb_y_set(fb_t *fb, int y)
@@ -345,6 +377,7 @@ void fb_image_draw(fb_t *fb)
 	for (i = 0; i < im->h; i++)
 	{
 		memcpy(fb_tmp, im_tmp, bytes);
+		//printf("bytes = %x\n", *(short int*)im_tmp);
 		im_tmp += bytes;
 		fb_tmp += fb->fix.line_length;
 	}
@@ -383,7 +416,12 @@ static void help(void)
 	printf("enable <ON>   : Enables (1) or disables (0) the FB (int)\n");
 	printf("posx <X>      : Sets the X position of the FB (int)\n");
 	printf("posy <Y>      : Sets the X position of the FB (int)\n");
+	printf("transp <ON>   : Enables the transparency on the FB (int)\n");
+	printf("trcol <color> : Sets the transparent color value (short int)\n");
+	printf("vout <OUTPUT> : Sets the venc output\n");
 	printf("FB can be osd0, osd1, vid0, vid1\n");
+	printf("OUTPUT can be composite %d, component %d, svideo %d\n",
+		FB_COMPOSITE, FB_COMPONENT, FB_SVIDEO);
 	printf("\n");
 }
 
@@ -398,7 +436,6 @@ static void test_output(fb_t *fb, int w, int h, int vw, int vh, int set)
 	}
 	fb_image_draw(fb);
 }
-
 
 static void test_enable(fb_t *fb, int on)
 {
@@ -416,6 +453,53 @@ static void test_posy(fb_t *fb, int y)
 {
 	printf("Running posy test\n");
 	fb_y_set(fb, y);
+}
+
+static void test_vout(fb_t *fb, fb_vout_t out)
+{
+	FILE *f;
+
+	printf("running vout test %d\n", out);
+
+	/* open the video output sysfs file */
+	f = fopen("/sys/class/video_output/venc/state", "a");
+	if (!f)
+	{
+		printf("Error opening the file\n");
+		return;
+	}
+	fprintf(f, "%d", out);
+	fclose(f);
+}
+
+static void test_transp(fb_t *fb, int on)
+{
+	printf("Running transparency test %d\n", on);
+	fb_transp_set(fb, on);
+}
+
+static void test_trcolor(fb_t *fb, int color)
+{
+	int i, j;
+	unsigned short int *fb_tmp;
+
+	printf("Running transparency color test %x\n", color);
+	fb_transp_solor_set(fb, color);
+	if ((fb->plane != FB_OSD0) && (fb->plane != FB_OSD1))
+		return;
+	/* draw a rectangle of that size with that color */
+	if (color > 0xff)
+		color = 0xff;
+	fb_tmp = fb->mmap;
+	for (i = 0; i < 200; i++)
+	{
+		for (j = 0; j < 200; j++)
+		{
+			//printf("old value = %x\n", *fb_tmp2);
+			*(fb_tmp + j) = color;
+		}
+		(unsigned char *)fb_tmp += fb->fix.line_length;
+	}
 }
 
 int main(int argc, char **argv)
@@ -492,6 +576,36 @@ run_test:
 			return 5;
 		}
 		test_posy(fb, strtoul(argv[3], NULL, 10));
+	}
+	/* enable transparency */
+	else if (!strcmp(argv[2], "transp"))
+	{
+		if (argc < 4)
+		{
+			help();
+			return 5;
+		}
+		test_transp(fb, strtoul(argv[3], NULL, 10));
+	}
+	/* enable transparency */
+	else if (!strcmp(argv[2], "trcolor"))
+	{
+		if (argc < 4)
+		{
+			help();
+			return 5;
+		}
+		test_trcolor(fb, strtoul(argv[3], NULL, 10));
+	}
+	/* enable transparency */
+	else if (!strcmp(argv[2], "vout"))
+	{
+		if (argc < 4)
+		{
+			help();
+			return 5;
+		}
+		test_vout(fb, strtoul(argv[3], NULL, 10));
 	}
 	else
 	{

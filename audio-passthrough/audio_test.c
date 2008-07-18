@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <linux/soundcard.h>
+#include <signal.h>
 
 #define __DEBUG
 #ifdef __DEBUG
@@ -38,11 +39,25 @@
 #define SOUND_DEVICE    "/dev/dsp"
 #define MIXER_DEVICE    "/dev/mixer"
 
+int soundFd = -1;
+int outputFd = -1;
+
 /* Whether to use 'mic in' or 'line in' for sound input */
 typedef enum SoundInput {
     MIC_SOUND_INPUT,
     LINEIN_SOUND_INPUT
 } SoundInput;
+
+void signal_handler(int signo)
+{
+	printf("Audio passthrough test finished.\n");
+	if(soundFd > 0)
+		close(soundFd);
+	if(outputFd > 0)
+		close(outputFd);
+
+	exit(0);
+}
 
 static int initOutputSoundDevice(void)
 {
@@ -181,19 +196,24 @@ static int  initSoundDevice(SoundInput soundInput)
 int main(int argc, char** argv)
 {
 	unsigned short inputBuf[INPUTBUFSIZE];
-	int soundFd;
 	int numOfBytes;
-	int outputFd;
+
+	signal(SIGINT, signal_handler);
 	soundFd = initSoundDevice(LINEIN_SOUND_INPUT);
 	if (soundFd == FAILURE) {
 		printf("init Sound Device error\n");
-		return 0;
+		return 1;
+	} else {
+		printf("init sound device ok\n");
 	}
+
 	outputFd = initOutputSoundDevice();
 	if (outputFd == FAILURE) {
 		printf("init Output Device error\n");
 		close(soundFd);
-		return 0;
+		return 1;
+	} else {
+		printf("init output device ok\n");
 	}
 	
 	printf("Press Ctrl + C to quit.\n");
@@ -202,12 +222,11 @@ int main(int argc, char** argv)
 	    numOfBytes = read(soundFd, inputBuf, INPUTBUFSIZE);
 	    if (numOfBytes == -1) {
             	ERR("Error reading the data from speech file\n");
-            	return 0;
+		return 1;
 	    }
 	    write(outputFd, inputBuf, numOfBytes);
         }
 
-	
 
 	return 0;
 }

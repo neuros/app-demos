@@ -108,24 +108,28 @@ static void main_loop()
                action_event();
         }
     }
-    close(ir_fd);
-    if (retry == MAX_RETRY)
-    {
-        printf("Factory test error: do not receive test key\n");
-        exit(-1);
-    }
 }
 
 int main(int argc, char *argv[])
 {
+    int retry;
     if ((ir_fd = open(IR_DEV, O_RDONLY)) > 0)
     {
-        if (blaster_test())
+        for (retry = 0; retry < MAX_RETRY; retry++)
         {
-            printf("Factory test error: blaster error\n");
+            if (blaster_test())
+            {
+                printf("Factory test error: blaster error\n");
+                exit(-1);
+            }
+            main_loop();
+        }
+        close(ir_fd);
+        if (retry == MAX_RETRY)
+        {
+            printf("Factory test error: do not receive test key\n");
             exit(-1);
         }
-        main_loop();
     }
     printf("Factory test error: open ir device error\n");
     exit(-1);

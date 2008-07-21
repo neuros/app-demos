@@ -2,6 +2,8 @@
 ##############################################################################
 #
 # Description: test script for osd hardware verifying
+#    		This script is used only for factory testing.
+#
 #    This script verify the functions of osd hardware. The result will be
 # printed on screen. The tester/operator simply look if the testing is ok
 # or not. At the same time, output message will be saved to a log file.
@@ -25,32 +27,69 @@ prepare_for_test()
 # routine for ide hdd testing
 test_hdd()
 {
+	echo "TEST IDE HDD:"
 	echo "TEST IDE HDD:" >> ${LOGFILE}
+	if [ ! -f /dev/hda ]
+	then
+		echo "ide hdd test failed"
+		echo "ide hdd test failed" >> ${LOGFILE}
+		return 1
+	fi
 	hdparm -i /dev/hda 1>>${LOGFILE} 2>>${LOGFILE}
 	if [ $? -eq 0 ]
 	then
-		echo "IDE HDD TEST OK"
+		echo "ide hdd test ok"
+		echo "ide hdd test ok" >> ${LOGFILE}
 	else
-		echo "IDE HDD TEST FAILED"
+		echo "ide hdd test failed"
+		echo "ide hdd test failed" >> ${LOGFILE}
 	fi
 }
 
-# route for audio testing
-test_audio()
+# routine for ir blaster testing
+test_ir_blaster()
 {
-	echo "TEST AUDIO:" >> ${LOGFILE}
+	echo "TEST IR BLASTER:"
+	echo "TEST IR BLASTER:" >> ${LOGFILE}
+	./blaster-test
+	if [ $? -eq 0 ]
+	then
+		echo "ir blaster test ok"
+		echo "ir blaster test ok" >> ${LOGFILE}
+	else
+		echo "ir blaster test failed"
+		echo "ir blaster test failed" >> ${LOGFILE}
+	fi
 }
 
-# route for video testing
-test_vedio()
+# routine for audio testing
+test_audio()
 {
+	echo "TEST AUDIO:"
+	echo "TEST AUDIO:" >> ${LOGFILE}
+	./audio_test
+	if [ $? -eq 0 ]
+	then
+		echo "audio test finished"
+		echo "audio test finished" >> ${LOGFILE}
+	else
+		echo "audio test failed"
+		echo "audio test failed" >> ${LOGFILE}
+	fi
+}
+
+# routine for video testing
+test_video()
+{
+	echo "TEST VIDEO:"
 	echo "TEST VIDEO:" >> ${LOGFILE}
 }
 
 # BOF main
 prepare_for_test
 test_hdd
+test_ir_blaster
 test_audio
-test_vedio
+test_video
 # EOF main
 

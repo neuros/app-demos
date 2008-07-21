@@ -29,20 +29,21 @@ test_hdd()
 {
 	echo "TEST IDE HDD:"
 	echo "TEST IDE HDD:" >> ${LOGFILE}
-	if [ ! -f /dev/hda ]
+	if [ -e /dev/hda ]
 	then
-		echo "ide hdd test failed"
-		echo "ide hdd test failed" >> ${LOGFILE}
-		return 1
-	fi
-	hdparm -i /dev/hda 1>>${LOGFILE} 2>>${LOGFILE}
-	if [ $? -eq 0 ]
-	then
-		echo "ide hdd test ok"
-		echo "ide hdd test ok" >> ${LOGFILE}
+		hdparm -i /dev/hda 1>>${LOGFILE} 2>>${LOGFILE}
+		if [ $? -eq 0 ]
+		then
+			echo "ide hdd test ok"
+			echo "ide hdd test ok" >> ${LOGFILE}
+		else
+			echo "ide hdd test failed"
+			echo "ide hdd test failed" >> ${LOGFILE}
+		fi
 	else
 		echo "ide hdd test failed"
 		echo "ide hdd test failed" >> ${LOGFILE}
+		return 1
 	fi
 }
 
@@ -87,9 +88,14 @@ test_video()
 
 # BOF main
 prepare_for_test
+echo ""
 test_hdd
+echo ""
 test_ir_blaster
+echo ""
 test_audio
+echo ""
 test_video
+echo ""
 # EOF main
 

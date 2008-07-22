@@ -51,10 +51,10 @@ typedef enum SoundInput {
 void signal_handler(int signo)
 {
 	printf("Audio passthrough test finished.\n");
-	if(soundFd > 0)
-		close(soundFd);
 	if(outputFd > 0)
 		close(outputFd);
+	if(soundFd > 0)
+		close(soundFd);
 
 	exit(0);
 }

@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
+#include <signal.h>
 
 #include <sys/ioctl.h>
 #include <sys/types.h>
@@ -15,6 +16,18 @@
 #include "fblib.h"
 
 #define VIDEO_BUFFERS_COUNT 3
+
+const char *fb_names[] = {
+	[FB_OSD0] = "dm_osd0_fb",
+	[FB_VID0] = "dm_vid0_fb",
+	[FB_VID1] = "dm_vid1_fb",
+	[FB_OSD1] = "dm_osd1_fb",
+};
+
+int run = 1;
+char fb_device[256] = "dm_vid1_fb";
+unsigned int input = 0;
+
 
 typedef struct video_buffer_t
 {
@@ -123,7 +136,6 @@ int video_reqbuf(video_t *v)
 	return ret;
 }
 
-
 video_t * video_open(const char *name)
 {
 	int fd;
@@ -189,9 +201,54 @@ void video_stop(video_t *v)
 		perror("Stream stop failed");
 	}
 }
+/* hide all fb windows, to make only the selected fb visible */
+void video_hide(fb_t *fb)
+{
+	unsigned int i;
+
+	for (i = 0; i < FBS; i++)
+	{
+		if (i == fb->plane)
+			continue;
+		else
+		{
+			fb_t *fbtmp;
+
+			fbtmp = fb_new(fb_names[i]);
+			fb_enable(fbtmp, 0);
+			fb_delete(fbtmp);
+		}
+	}
+}
+
+/* show all fb windows, return all windows to initial state */
+void video_show(fb_t *fb)
+{
+	unsigned int i;
+
+	for (i = 0; i < FBS; i++)
+	{
+		if (i == fb->plane)
+			continue;
+		else
+		{
+			fb_t *fbtmp;
+
+			fbtmp = fb_new(fb_names[i]);
+			fb_enable(fbtmp, 1);
+			fb_delete(fbtmp);
+		}
+	}
+}
+
+void abort_signal(int signal)
+{
+	printf("called\n");
+}
 
 void help(void)
 {
+	run = 0;
 }
 
 int main(int argc, char **argv)
@@ -199,23 +256,50 @@ int main(int argc, char **argv)
 	video_t *v;
 	fb_t *fb;
 	struct v4l2_format format;
+	unsigned int lines;
 
+	if (argc > 1)
+	{
+		snprintf(fb_device, 256, "dm_%s_fb", argv[1]);
+	}
+	if (argc > 2)
+	{
+		input = atoi(argv[2]);
+	}
+	printf("Using %s as fb device and input number %d\n", fb_device, input);
 	/* open up the device */
 	v = video_open("/dev/video0");
-	fb =  fb_new("dm_vid1_fb");
-	/* TODO set input */
+	fb =  fb_new(fb_device);
+	if (!fb)
+		return 2;
+	/* register the signal handler */
+	if (signal(SIGINT, abort_signal) == SIG_ERR)
+	{
+		printf("Can't register signal handler\n");
+		return 3;
+	}
+	/* set input */
+	if (ioctl(v->fd, VIDIOC_S_INPUT, &input) < 0)
+	{
+		printf("Set input failed\n");
+		return 4;
+	}
 	/* TODO get stds */
 	/* TODO set fmt image */
-	/* TODO get fmt image */
+	/* get fmt image */
+	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 	if (ioctl(v->fd, VIDIOC_G_FMT, &format) < 0)
 	{
 		printf("Get format failed\n");
+		return 5;
 	}
-	printf("%d %d %d\n", format.fmt.pix.width, format.fmt.pix.height, format.fmt.pix.bytesperline);
+	lines = format.fmt.pix.height > fb->var.yres ? fb->var.yres : format.fmt.pix.height;
+	/* hide all planes but the selected */
+	video_hide(fb);
 	/* capture */
 	if (video_start(v) < 0)
 		goto err;
-	while (1)
+	while (run)
 	{
 		int ret;
 		int i;
@@ -235,7 +319,7 @@ int main(int argc, char **argv)
 		/* FIXME this is very harcoded, we need to check out the
  		 * format image and fb format */
 		/* send the captured image to the fb */
-		for (i = 0; i < 480; i++)
+		for (i = 0; i < lines; i++)
 		{
 			memcpy((unsigned char *)fb->mmap + (fb->fix.line_length * i), (unsigned char *)v->buffers[buffer.index].start + (format.fmt.pix.bytesperline * i), 720*16/8);
 		}
@@ -249,6 +333,8 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+	/* show all planes back */
+	video_show(fb);
 	video_stop(v);
 err:
 	video_close(v);

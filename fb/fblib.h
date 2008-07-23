@@ -86,5 +86,6 @@ extern void fb_size_set(fb_t *fb, int w, int h, int vw, int vh);
 extern void fb_image_draw(fb_t *fb);
 extern void fb_enable(fb_t *fb, unsigned int on);
 extern void fb_image_load(void);
+extern void fb_cbtest_set(fb_t *fb, int on);
 
 #endif

@@ -161,16 +161,21 @@ error:
 	return NULL;
 }
 
+void fb_cbtest_set(fb_t *fb, int on)
+{
+	if (ioctl(fb->fd, FBIO_CBTEST, &on) < 0)
+	{
+		printf("couldn't set color bar mode to %d\n", on);
+		return;
+	}
+}
+
 void fb_transp_set(fb_t *fb, int on)
 {
 	if (ioctl(fb->fd, FBIO_TRANSP, &on) < 0)
 	{
 		printf("couldn't set transparency to %d\n", on);
 		return;
-	}
-	else
-	{
-		fb_info_get(fb);
 	}
 }
 
@@ -180,10 +185,6 @@ void fb_transp_solor_set(fb_t *fb, int color)
 	{
 		printf("couldn't set transparency color to %d\n", color);
 		return;
-	}
-	else
-	{
-		fb_info_get(fb);
 	}
 }
 

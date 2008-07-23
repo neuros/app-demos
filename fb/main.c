@@ -14,6 +14,7 @@ static void help(void)
 	printf("posx <X>      : Sets the X position of the FB (int)\n");
 	printf("posy <Y>      : Sets the X position of the FB (int)\n");
 	printf("transp <ON>   : Enables the transparency on the FB (int)\n");
+	printf("cbmode <ON>   : Enables Color Bar test mode (int)\n");
 	printf("trcol <color> : Sets the transparent color value (short int)\n");
 	printf("vout <OUTPUT> : Sets the venc output\n");
 	printf("FB can be osd0, osd1, vid0, vid1\n");
@@ -67,6 +68,11 @@ static void test_vout(fb_t *fb, fb_vout_t out)
 	}
 	fprintf(f, "%d", out);
 	fclose(f);
+}
+static void test_cbmode(fb_t *fb, int on)
+{
+	printf("Runnning color bar test mode %d\n", on);
+	fb_cbtest_set(fb, on);
 }
 
 static void test_transp(fb_t *fb, int on)
@@ -203,6 +209,16 @@ run_test:
 			return 5;
 		}
 		test_vout(fb, strtoul(argv[3], NULL, 10));
+	}
+	/* enable color bar mode */
+	else if (!strcmp(argv[2], "cbmode"))
+	{
+		if (argc < 4)
+		{
+			help();
+			return 5;
+		}
+		test_cbmode(fb, strtoul(argv[3], NULL, 10));
 	}
 	else
 	{

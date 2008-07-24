@@ -10,19 +10,11 @@
 #include <linux/soundcard.h>
 #include <signal.h>
 
-#define __DEBUG
-#ifdef __DEBUG
-#define ERR(x...) printf(x)
-#else
-#define ERR(x...)
-#endif
-#define FAILURE -1
-#define SUCCESS 0
 /* The number of channels of the audio codec */
 #define NUM_CHANNELS           2
 
 /* The sample rate of the audio codec */
-#define SAMPLE_RATE            8000
+#define SAMPLE_RATE            48000
 
 /* The gain (0-100) of the left and right channels */
 #define LEFT_GAIN              100
@@ -39,194 +31,223 @@
 #define SOUND_DEVICE    "/dev/dsp"
 #define MIXER_DEVICE    "/dev/mixer"
 
-int soundFd = -1;
-int outputFd = -1;
 
-/* Whether to use 'mic in' or 'line in' for sound input */
-typedef enum SoundInput {
-    MIC_SOUND_INPUT,
-    LINEIN_SOUND_INPUT
-} SoundInput;
+int input_fd  = -1;
+int output_fd = -1;
+char *recsrc = NULL;
+
+void close_sound_device(void)
+{
+    if (output_fd > 0)
+        close(output_fd);
+    if (input_fd > 0)
+        close(input_fd);
+
+    input_fd  = -1;
+    output_fd = -1;
+}
 
 void signal_handler(int signo)
 {
-	printf("Audio passthrough test finished.\n");
-	if(outputFd > 0)
-		close(outputFd);
-	if(soundFd > 0)
-		close(soundFd);
+    printf("Audio passthrough test finished.\n");
+    close_sound_device();
 
-	exit(0);
-}
-
-static int initOutputSoundDevice(void)
-{
-    int     vol         = LEFT_GAIN | (RIGHT_GAIN << 8);
-    int     channels    = NUM_CHANNELS;
-    int     sampleRate  = SAMPLE_RATE;
-    int     format      = AFMT_S16_LE;
-    int     soundFd;
-    int     mixerFd;
-
-    /* Set the output volume */
-    mixerFd = open(MIXER_DEVICE, O_RDONLY);
-
-    if (mixerFd == -1) {
-        ERR("Failed to open %s\n", MIXER_DEVICE);
-        return FAILURE;
-    }
-
-    if (ioctl(mixerFd, SOUND_MIXER_WRITE_VOLUME, &vol) == -1) {
-        ERR("Failed to set the volume of line in.\n");
-        close(mixerFd);
-        return FAILURE;
-    }
-
-    close(mixerFd);
-
-    /* Open the sound device for writing */
-    soundFd = open(SOUND_DEVICE, O_WRONLY);
-
-    if (soundFd == -1) {
-        ERR("Failed to open the sound device (%s)\n", SOUND_DEVICE);
-        return FAILURE;
-    }
-
-    /* Set the sound format (only AFMT_S16_LE supported) */
-    if (ioctl(soundFd, SNDCTL_DSP_SETFMT, &format) == -1) {
-        ERR("Could not set format %d\n", format);
-        return FAILURE;
-    }
-
-    /* Set the number of channels */
-    if (ioctl(soundFd, SNDCTL_DSP_CHANNELS, &channels) == -1) {
-        ERR("Could not set mixer to %d channels\n", channels);
-        return FAILURE;
-    }
-
-    /* Set the sample rate */
-    if (ioctl(soundFd, SNDCTL_DSP_SPEED, &sampleRate) == -1) {
-        ERR("Could not set sample rate (%d)\n", sampleRate);
-        return FAILURE;
-    }
-
-    return soundFd;
+    exit(0);
 }
 
 
-static int  initSoundDevice(SoundInput soundInput)
+int main(int argc, char** argv)
 {
     int     vol        = LEFT_GAIN | (RIGHT_GAIN << 8);
     int     sampleRate = SAMPLE_RATE;
     int     channels   = NUM_CHANNELS;
     int     format     = AFMT_S16_LE;
-    int     soundFd;
-    int     mixerFd;
-    int     recMask;
-    int     recorder;
 
-    if (soundInput == MIC_SOUND_INPUT) {
-        printf("Microphone recorder selected\n");
-        recorder = SOUND_MASK_MIC;
-    }
-    else {
-        printf("Line in recorder selected\n");
-        recorder = SOUND_MASK_LINE;
-    }
+    int mixer_fd  = -1;
+	mixer_info info;
+	int     recMask;
+    int		i, src;
+    oss_mixer_enuminfo ei;
 
-    /* Select the right capture device and volume */
-    mixerFd = open(MIXER_DEVICE, O_RDONLY);
+    int c;
+    extern char *optarg;
+    unsigned short inputBuf[INPUTBUFSIZE];
+    int numOfBytes;
 
-    if (mixerFd == -1) {
-        ERR("Failed to open %s\n", MIXER_DEVICE);
-        return FAILURE;
-    }
-
-    if (ioctl(mixerFd, SOUND_MIXER_READ_RECMASK, &recMask) == -1) {
-        ERR("Failed to ask mixer for available recorders.\n");
-        return FAILURE;
-    }
-
-    if ((recMask & recorder) == 0) {
-        ERR("Recorder not supported\n");
-        return FAILURE;
+    while ((c = getopt (argc, argv, "s:i:")) != EOF)
+    {
+        switch (c)
+        {
+        case 's':
+            break;
+        case 'b':
+            break;
+        case 'i':
+            recsrc = optarg;
+            break;
+        }
     }
 
-    if (ioctl(mixerFd, SOUND_MIXER_WRITE_RECSRC, &recorder) == -1) {
-        ERR("Failed to set recorder.\n");
-        return FAILURE;
+    signal(SIGINT, signal_handler);
+
+    /* open mixer device */
+    mixer_fd = open(MIXER_DEVICE, O_RDONLY);
+    if (mixer_fd < 0)
+    {
+        printf("Failed to open %s\n", MIXER_DEVICE);
+        return -1;
     }
 
-    if (ioctl(mixerFd, SOUND_MIXER_WRITE_IGAIN, &vol) == -1) {
-        ERR("Failed to set the volume of line in.\n");
-        return FAILURE;
+	/* set line input */
+    if (ioctl(mixer_fd, SOUND_MIXER_INFO, &info) == -1) {
+        printf("Failed to get mixer infomation\n");
+        close(mixer_fd);
+        return -1;
     }
 
-    close(mixerFd);
+    if (ioctl(mixer_fd, SOUND_MIXER_READ_RECMASK, &recMask) == -1) {
+        printf("Failed to ask mixer for available recorders.\n");
+        close(mixer_fd);
+        return -1;
+    }
+
+	src = SOUND_MASK_LINE;
+    if ((recMask & src) == 0) {
+        printf("Recorder not supported\n");
+        close(mixer_fd);
+        return -1;
+    }
+
+    if (ioctl(mixer_fd, SOUND_MIXER_WRITE_RECSRC, &src) == -1) {
+        printf("Failed to set recorder.\n");
+        close(mixer_fd);
+        return -1;
+    }
+
+    /* set volume */
+    if (ioctl(mixer_fd, SOUND_MIXER_WRITE_IGAIN, &vol) == -1)
+    {
+        printf("Failed to set the volume of line in.\n");
+        close(mixer_fd);
+        return -1;
+    }
+    if (ioctl(mixer_fd, SOUND_MIXER_WRITE_VOLUME, &vol) == -1)
+    {
+        printf("Failed to set the volume of line in.\n");
+        close(mixer_fd);
+        return -1;
+    }
+
+    /* select record source */
+    if (ioctl (mixer_fd, SNDCTL_DSP_GET_RECSRC_NAMES, &ei) == -1)
+    {
+        printf("SNDCTL_DSP_GET_RECSRC_NAMES failed\n");
+        close(mixer_fd);
+        return -1;
+    }
+	if(recsrc == NULL)
+	{
+		printf("Usage: %s -i<record source>\n", argv[0]);
+		printf("Possible recording sources for the selected device:\n\n");
+		for (i = 0; i < ei.nvalues; i++)
+		{
+			printf("\t%s\n", ei.strings + ei.strindex[i]);
+		}
+		printf("\n");
+		close(mixer_fd);
+		return 0;
+	}
+
+    src = -1;
+    for (i = 0; i < ei.nvalues; i++)
+    {
+        if (strcmp (recsrc, ei.strings + ei.strindex[i]) == 0)
+        {
+            src = i;
+            break;
+        }
+    }
+
+    if (src < 0 || src > ei.nvalues)
+    {
+        printf("invalid record source: %s\n",recsrc);
+    }
+    else
+    {
+        if (ioctl (mixer_fd, SNDCTL_DSP_SET_RECSRC, &src) == -1)
+        {
+            printf("SNDCTL_DSP_SET_RECSRC failed\n");
+        	close(mixer_fd);
+            return -1;
+        }
+    }
+    close(mixer_fd);
+
+
+
 
     /* Open the sound device for writing */
-    soundFd = open(SOUND_DEVICE, O_RDONLY);
-
-    if (soundFd == -1) {
-        ERR("Failed to open the sound device (%s)\n", SOUND_DEVICE);
-        return FAILURE;
+    input_fd = open(SOUND_DEVICE, O_RDONLY);
+    if (input_fd < 0)
+    {
+        printf("Failed to open the sound device (%s)\n", SOUND_DEVICE);
+		close_sound_device();
+        return -1;
     }
 
+
     /* Set the sound format (only AFMT_S16_LE supported) */
-    if (ioctl(soundFd, SNDCTL_DSP_SETFMT, &format) == -1) {
-        ERR("Could not set format %d\n", format);
-        return FAILURE;
+    if (ioctl(input_fd, SNDCTL_DSP_SETFMT, &format) == -1)
+    {
+        printf("Could not set format %d\n", format);
+		close_sound_device();
+        return -1;
     }
 
     /* Set the number of channels */
-    if (ioctl(soundFd, SNDCTL_DSP_CHANNELS, &channels) == -1) {
-        ERR("Could not set mixer to %d channels\n", channels);
-        return FAILURE;
+    if (ioctl(input_fd, SNDCTL_DSP_CHANNELS, &channels) == -1)
+    {
+        printf("Could not set mixer to %d channels\n", channels);
+		close_sound_device();
+        return -1;
     }
 
     /* Set the sample rate */
-    if (ioctl(soundFd, SNDCTL_DSP_SPEED, &sampleRate) == -1) {
-        ERR("Could not set sample rate (%d)\n", sampleRate);
-        return FAILURE;
+    if (ioctl(input_fd, SNDCTL_DSP_SPEED, &sampleRate) == -1)
+    {
+        printf("Could not set sample rate (%d)\n", sampleRate);
+		close_sound_device();
+        return -1;
     }
 
-    return soundFd;
-}
 
-int main(int argc, char** argv)
-{
-	unsigned short inputBuf[INPUTBUFSIZE];
-	int numOfBytes;
 
-	signal(SIGINT, signal_handler);
-	soundFd = initSoundDevice(LINEIN_SOUND_INPUT);
-	if (soundFd == FAILURE) {
-		printf("init Sound Device error\n");
-		return 1;
-	} else {
-		printf("init sound device ok\n");
-	}
 
-	outputFd = initOutputSoundDevice();
-	if (outputFd == FAILURE) {
-		printf("init Output Device error\n");
-		close(soundFd);
-		return 1;
-	} else {
-		printf("init output device ok\n");
-	}
-	
-	printf("Press Ctrl + C to quit.\n");
 
-	while(1) {
-	    numOfBytes = read(soundFd, inputBuf, INPUTBUFSIZE);
-	    if (numOfBytes == -1) {
-            	ERR("Error reading the data from speech file\n");
-		return 1;
-	    }
-	    write(outputFd, inputBuf, numOfBytes);
+
+    /* Open the sound device for writing */
+
+    output_fd = open(SOUND_DEVICE, O_WRONLY);
+    if (output_fd == -1)
+    {
+        printf("Failed to open the sound device (%s)\n", SOUND_DEVICE);
+		close_sound_device();
+        return -1;
+    }
+
+    printf("Press Ctrl + C to quit.\n");
+
+    while (1)
+    {
+        numOfBytes = read(input_fd, inputBuf, INPUTBUFSIZE);
+        if (numOfBytes == -1)
+        {
+            printf("Error reading the data from speech file\n");
+			break;
         }
+        write(output_fd, inputBuf, numOfBytes);
+    }
+	close_sound_device();
 
-
-	return 0;
+    return 0;
 }

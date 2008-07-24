@@ -87,6 +87,8 @@ test_video()
 }
 
 # BOF main
+currdir=`dirname $0`                                 
+cd ${currdir}
 prepare_for_test
 echo ""
 test_hdd

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+currdir=`dirname $0`
+cd ${currdir}
+
+echo "TEST VIDEO LINE1:"
+echo ""
+echo "Now test LINE1 video input, please connect cable to LINE1 input"
+echo "(Rear-panel video input on column 3 from left)"
+./video-demo vid1 0

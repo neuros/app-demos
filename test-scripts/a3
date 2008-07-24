@@ -1,0 +1,11 @@
+#!/bin/sh
+
+currdir=`dirname $0`
+cd ${currdir}
+
+echo "TEST AUDIO LINE3:"
+echo ""
+echo "Now test LINE3 audio input, please connect cable to LINE3 input"
+echo "(Front-panel audio input)"
+./audio_test -iline3
+

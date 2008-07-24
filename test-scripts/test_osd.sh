@@ -63,29 +63,6 @@ test_ir_blaster()
 	fi
 }
 
-# routine for audio testing
-test_audio()
-{
-	echo "TEST AUDIO:"
-	echo "TEST AUDIO:" >> ${LOGFILE}
-	./audio_test
-	if [ $? -eq 0 ]
-	then
-		echo "audio test finished"
-		echo "audio test finished" >> ${LOGFILE}
-	else
-		echo "audio test failed"
-		echo "audio test failed" >> ${LOGFILE}
-	fi
-}
-
-# routine for video testing
-test_video()
-{
-	echo "TEST VIDEO:"
-	echo "TEST VIDEO:" >> ${LOGFILE}
-}
-
 # BOF main
 currdir=`dirname $0`                                 
 cd ${currdir}
@@ -94,10 +71,6 @@ echo ""
 test_hdd
 echo ""
 test_ir_blaster
-echo ""
-test_audio
-echo ""
-test_video
 echo ""
 # EOF main
 

@@ -13,9 +13,6 @@
 /* The number of channels of the audio codec */
 #define NUM_CHANNELS           2
 
-/* The sample rate of the audio codec */
-#define SAMPLE_RATE            48000
-
 /* The gain (0-100) of the left and right channels */
 #define LEFT_GAIN              100
 #define RIGHT_GAIN             100
@@ -35,6 +32,7 @@
 int input_fd  = -1;
 int output_fd = -1;
 char *recsrc = NULL;
+int sampleRate=48000;
 
 void close_sound_device(void)
 {
@@ -59,7 +57,6 @@ void signal_handler(int signo)
 int main(int argc, char** argv)
 {
     int     vol        = LEFT_GAIN | (RIGHT_GAIN << 8);
-    int     sampleRate = SAMPLE_RATE;
     int     channels   = NUM_CHANNELS;
     int     format     = AFMT_S16_LE;
 
@@ -79,8 +76,7 @@ int main(int argc, char** argv)
         switch (c)
         {
         case 's':
-            break;
-        case 'b':
+			sampleRate = atoi(optarg);
             break;
         case 'i':
             recsrc = optarg;
@@ -145,15 +141,17 @@ int main(int argc, char** argv)
         close(mixer_fd);
         return -1;
     }
+	
+    printf("Possible recording sources for the selected device:\n\n");
+	for (i = 0; i < ei.nvalues; i++)
+	{
+		printf("\t%s\n", ei.strings + ei.strindex[i]);
+	}
+	printf("\n");
+
 	if(recsrc == NULL)
 	{
-		printf("Usage: %s -i<record source>\n", argv[0]);
-		printf("Possible recording sources for the selected device:\n\n");
-		for (i = 0; i < ei.nvalues; i++)
-		{
-			printf("\t%s\n", ei.strings + ei.strindex[i]);
-		}
-		printf("\n");
+		printf("Usage: %s -s<speed> -i<record source>\n", argv[0]);
 		close(mixer_fd);
 		return 0;
 	}
@@ -231,6 +229,29 @@ int main(int argc, char** argv)
     if (output_fd == -1)
     {
         printf("Failed to open the sound device (%s)\n", SOUND_DEVICE);
+		close_sound_device();
+        return -1;
+    }
+    /* Set the sound format (only AFMT_S16_LE supported) */
+    if (ioctl(output_fd, SNDCTL_DSP_SETFMT, &format) == -1)
+    {
+        printf("Could not set format %d\n", format);
+		close_sound_device();
+        return -1;
+    }
+
+    /* Set the number of channels */
+    if (ioctl(output_fd, SNDCTL_DSP_CHANNELS, &channels) == -1)
+    {
+        printf("Could not set mixer to %d channels\n", channels);
+		close_sound_device();
+        return -1;
+    }
+
+    /* Set the sample rate */
+    if (ioctl(output_fd, SNDCTL_DSP_SPEED, &sampleRate) == -1)
+    {
+        printf("Could not set sample rate (%d)\n", sampleRate);
 		close_sound_device();
         return -1;
     }

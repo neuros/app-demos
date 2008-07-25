@@ -2,7 +2,7 @@
 
 currdir=`dirname $0`
 cd ${currdir}
-
+killall audio_test 1>/dev/null 2>/dev/null
 echo "TEST AUDIO LINE2:"
 echo ""
 echo "Now test LINE2 audio input, please connect cable to LINE2 input"

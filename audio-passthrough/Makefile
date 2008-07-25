@@ -11,7 +11,7 @@ INSTDIR=${INSTALL_MOD_PATH}/usr/local/bin/test
 
 CROSSCOMPILE=arm-linux-
 CC=$(CROSSCOMPILE)gcc
-CFLAGS=-I$(KNL_INSTALL_DIR)/usr/include -Wall
+CFLAGS=-I$(KNL_INSTALL_DIR)/include -Wall
 
 .PHONY: install clean
 

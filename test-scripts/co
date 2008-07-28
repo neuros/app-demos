@@ -1,0 +1,13 @@
+#!/bin/sh
+
+currdir=`dirname $0`
+cd ${currdir}
+
+echo "TEST Component Output:"
+echo ""
+echo "Now test component output, please connect cable to component output port"
+echo "(Rear-panel compnent output on column 1 from right)"
+
+/usr/local/bin/test/fb-demo osd0 output 720 480
+/usr/local/bin/test/fb-demo osd0 cbmode 1
+echo U:1280x720p-30 > /sys/class/graphics/fb1/mode

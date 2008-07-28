@@ -32,7 +32,7 @@
 int input_fd  = -1;
 int output_fd = -1;
 char *recsrc = NULL;
-int sampleRate=48000;
+int sampleRate=16000;
 
 void close_sound_device(void)
 {

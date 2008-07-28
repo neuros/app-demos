@@ -1,4 +1,4 @@
-TARGET_BIN_DIR=/usr/local/bin/test/
+TARGET_BIN_DIR=/usr/local/bin/
 BIN_DIR=$(ROOTFS)/fs/$(TARGET_BIN_DIR)
 
 video-demo: main.c $(shell pwd)/../fb/fblib.o

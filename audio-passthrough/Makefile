@@ -7,7 +7,7 @@ endif
 
 EXECUTABLE=audio_test
 OBJECTS=audio_test.o
-INSTDIR=${INSTALL_MOD_PATH}/usr/local/bin/test
+INSTDIR=${INSTALL_MOD_PATH}/usr/local/bin
 
 CROSSCOMPILE=arm-linux-
 CC=$(CROSSCOMPILE)gcc

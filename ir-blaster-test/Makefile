@@ -2,7 +2,7 @@ ifndef PRJROOT
     $(error You must first source the BSP environment: "source neuros-env")
 endif
 
-INSTDIR=${INSTALL_MOD_PATH}/usr/local/bin/test
+INSTDIR=${INSTALL_MOD_PATH}/usr/local/bin
 
 all:blaster-test
 

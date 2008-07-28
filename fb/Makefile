@@ -3,7 +3,7 @@ DATA=320x240_duck.rgb565 \
 720x576_test.uyvy
 
 TARGET_DATA_DIR=/usr/local/share/test/
-TARGET_BIN_DIR=/usr/local/bin/test/
+TARGET_BIN_DIR=/usr/local/bin/
 DATA_DIR=$(ROOTFS)/fs/$(TARGET_DATA_DIR)
 BIN_DIR=$(ROOTFS)/fs/$(TARGET_BIN_DIR)
 

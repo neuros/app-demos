@@ -101,7 +101,7 @@ static void test_trcolor(fb_t *fb, int color)
 			//printf("old value = %x\n", *fb_tmp2);
 			*(fb_tmp + j) = color;
 		}
-		(unsigned char *)fb_tmp += fb->fix.line_length;
+		fb_tmp += fb->fix.line_length;
 	}
 }
 

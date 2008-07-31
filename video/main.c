@@ -257,6 +257,7 @@ int main(int argc, char **argv)
 	fb_t *fb;
 	struct v4l2_format format;
 	unsigned int lines;
+    v4l2_std_id std_id;
 
 	if (argc > 1)
 	{
@@ -284,6 +285,15 @@ int main(int argc, char **argv)
 		printf("Set input failed\n");
 		return 4;
 	}
+    if (input == 2)
+    {
+        std_id = V4L2_STD_HD_480P;
+        if (ioctl(v->fd, VIDIOC_S_STD, &std_id) < 0)
+        {
+            printf("Set std failed\n");
+            return 6;
+        }
+    }
 	/* TODO get stds */
 	/* TODO set fmt image */
 	/* get fmt image */

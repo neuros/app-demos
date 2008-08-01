@@ -1,0 +1,24 @@
+#!/bin/sh
+
+currdir=`dirname $0`
+l1red=/sys/class/leds/led1_red/brightness
+l1green=/sys/class/leds/led1_green/brightness
+l2red=/sys/class/leds/led2_red/brightness
+l2green=/sys/class/leds/led2_green/brightness
+cd ${currdir}
+echo "TEST LEDS:"
+echo ""
+echo "Now test LEDS, check the green and red leds on the front panel"
+echo 0 > ${l1green}
+echo 0 > ${l1red}
+echo 0 > ${l2green}
+echo 0 > ${l2red}
+
+echo 1 > ${l1green}
+echo 1 > ${l2red}
+sleep 1
+echo 0 > ${l1green}
+echo 0 > ${l2red}
+echo 1 > ${l1red}
+echo 1 > ${l2green}
+

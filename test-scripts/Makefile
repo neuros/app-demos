@@ -17,4 +17,5 @@ install:
 	@cp -a a2 $(INSTDIR)/
 	@cp -a a3 $(INSTDIR)/
 	@cp -a co $(INSTDIR)/
+	@cp -a le $(INSTDIR)/
 clean:

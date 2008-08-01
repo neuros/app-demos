@@ -288,11 +288,15 @@ int main(int argc, char **argv)
     if (input == 2)
     {
         std_id = V4L2_STD_HD_480P;
-        if (ioctl(v->fd, VIDIOC_S_STD, &std_id) < 0)
-        {
-            printf("Set std failed\n");
-            return 6;
-        }
+    }
+    else
+    {
+        std_id = V4L2_STD_NTSC;
+    }
+    if (ioctl(v->fd, VIDIOC_S_STD, &std_id) < 0)
+    {
+        printf("Set std failed\n");
+        return 6;
     }
 	/* TODO get stds */
 	/* TODO set fmt image */

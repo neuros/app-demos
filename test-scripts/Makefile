@@ -13,6 +13,7 @@ install:
 	@cp -a t1 $(INSTDIR)/
 	@cp -a v1 $(INSTDIR)/
 	@cp -a v2 $(INSTDIR)/
+	@cp -a v3 $(INSTDIR)/
 	@cp -a a1 $(INSTDIR)/
 	@cp -a a2 $(INSTDIR)/
 	@cp -a a3 $(INSTDIR)/

@@ -7,9 +7,9 @@ INSTDIR=${INSTALL_MOD_PATH}/usr/local/bin
 all:blaster-test
 
 blaster-test:
-	$(CC) main.c -I$(KNL_INSTALL_DIR)/include -o blaster-test
+	arm-linux-gcc main.c -I$(KNL_INSTALL_DIR)/include -o blaster-test
 install:all
 	@mkdir -p $(INSTDIR)
 	@cp -a blaster-test $(INSTDIR)/
 clean:
-	@rm -f *.o blaster-test
+	rm -f *.o blaster-test

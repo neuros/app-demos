@@ -9,6 +9,8 @@ EXECUTABLE=audio_test
 OBJECTS=audio_test.o
 INSTDIR=${INSTALL_MOD_PATH}/usr/local/bin
 
+CROSSCOMPILE=arm-linux-
+CC=$(CROSSCOMPILE)gcc
 CFLAGS=-I$(KNL_INSTALL_DIR)/include -Wall
 
 .PHONY: install clean
@@ -20,7 +22,5 @@ install:all
 	@cp -a $(EXECUTABLE) $(INSTDIR)/
 $(EXECUTABLE): $(OBJECTS)
 	$(CC) -o $@ $(OBJECTS)
-.c:.o
-	$(CC) $(CFLAGS) -c -o $@ $<
 clean:
 	@rm -f $(OBJECTS) $(EXECUTABLE)

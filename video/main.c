@@ -12,6 +12,7 @@
 #include <sys/mman.h>
 
 #include <linux/videodev2.h>
+#include <media/davinci_vpfe.h>
 
 #include "fblib.h"
 
@@ -257,7 +258,8 @@ int main(int argc, char **argv)
 	fb_t *fb;
 	struct v4l2_format format;
 	unsigned int lines;
-    v4l2_std_id std_id;
+	v4l2_std_id std_id = V4L2_STD_NTSC;
+	char *std = NULL;
 
 	if (argc > 1)
 	{
@@ -266,6 +268,10 @@ int main(int argc, char **argv)
 	if (argc > 2)
 	{
 		input = atoi(argv[2]);
+	}
+	if (argc > 2)
+	{
+		std = argv[3];
 	}
 	printf("Using %s as fb device and input number %d\n", fb_device, input);
 	/* open up the device */
@@ -285,19 +291,38 @@ int main(int argc, char **argv)
 		printf("Set input failed\n");
 		return 4;
 	}
-    if (input == 2)
-    {
-        std_id = V4L2_STD_HD_480P;
-    }
-    else
-    {
-        std_id = V4L2_STD_NTSC;
-    }
-    if (ioctl(v->fd, VIDIOC_S_STD, &std_id) < 0)
-    {
-        printf("Set std failed\n");
-        return 6;
-    }
+	if (std != NULL)
+	{
+		if (!strcmp(std, "ntsc") && input != VPFE_AMUX_COMPONENT)
+		{
+			std_id = V4L2_STD_NTSC;
+		}
+		else if (!strcmp(std, "pal") && input != VPFE_AMUX_COMPONENT)
+		{
+			std_id = V4L2_STD_PAL;
+		}
+		else if (!strcmp(std, "480p") && input == VPFE_AMUX_COMPONENT)
+		{
+			std_id = V4L2_STD_HD_480P;
+		}
+		else if (!strcmp(std, "576p") && input == VPFE_AMUX_COMPONENT)
+		{
+			std_id = V4L2_STD_HD_576P;
+		}
+		else if (!strcmp(std, "720p") && input == VPFE_AMUX_COMPONENT)
+		{
+			std_id = V4L2_STD_HD_720P;
+		}
+		else if (!strcmp(std, "1080i") && input == VPFE_AMUX_COMPONENT)
+		{
+			std_id = V4L2_STD_HD_1080I;
+		}
+	}
+	if (ioctl(v->fd, VIDIOC_S_STD, &std_id) < 0)
+	{
+		printf("Set std failed\n");
+		return 6;
+	}
 	/* TODO get stds */
 	/* TODO set fmt image */
 	/* get fmt image */

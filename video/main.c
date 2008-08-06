@@ -345,7 +345,7 @@ int main(int argc, char **argv)
 		struct v4l2_buffer buffer;
 
 		buffer.type = v->req.type;
-	        buffer.memory = V4L2_MEMORY_MMAP;
+		buffer.memory = V4L2_MEMORY_MMAP;
 
 		ret = ioctl(v->fd, VIDIOC_DQBUF, &buffer);
 		if (ret < 0)
@@ -360,7 +360,9 @@ int main(int argc, char **argv)
 		/* send the captured image to the fb */
 		for (i = 0; i < lines; i++)
 		{
-			memcpy((unsigned char *)fb->mmap + (fb->fix.line_length * i), (unsigned char *)v->buffers[buffer.index].start + (format.fmt.pix.bytesperline * i), 720*16/8);
+			memcpy((unsigned char *)fb->mmap + (fb->fix.line_length * i), \
+				   (unsigned char *)v->buffers[buffer.index].start + (format.fmt.pix.bytesperline * i), \
+				   format.fmt.pix.bytesperline);
 		}
 		/* send the captured frame back to the queue */
 		ret = ioctl(v->fd, VIDIOC_QBUF, &buffer);

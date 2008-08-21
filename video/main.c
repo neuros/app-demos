@@ -140,6 +140,7 @@ int video_reqbuf(video_t *v)
 video_t * video_open(const char *name)
 {
 	int fd;
+	struct v4l2_input vinput;
 	video_t *v;
 
 	fd = open("/dev/video0", O_RDWR, O_NONBLOCK);
@@ -151,6 +152,18 @@ video_t * video_open(const char *name)
 	v = calloc(1, sizeof(video_t));
 	v->file = strdup(name);
 	v->fd = fd;
+	/* enumarate inputs */
+	vinput.index = 0;
+	while (ioctl(fd, VIDIOC_ENUMINPUT, &vinput) != -1)
+	{
+		vinput.index++;
+	}
+	if (!vinput.index)
+	{
+		printf("Couldn't enumerate inputs\n");
+	}
+	printf("Enumerated %d inputs\n", vinput.index);
+	/* get device capabilities */
 	if (ioctl(fd, VIDIOC_QUERYCAP, &v->cap) < 0)
 	{
 		goto err_query_cap;
@@ -285,6 +298,7 @@ int main(int argc, char **argv)
 		printf("Can't register signal handler\n");
 		return 3;
 	}
+
 	/* set input */
 	if (ioctl(v->fd, VIDIOC_S_INPUT, &input) < 0)
 	{
@@ -318,6 +332,7 @@ int main(int argc, char **argv)
 			std_id = V4L2_STD_HD_1080I;
 		}
 	}
+	printf("Setting standard %d\n", std_id);
 	if (ioctl(v->fd, VIDIOC_S_STD, &std_id) < 0)
 	{
 		printf("Set std failed\n");

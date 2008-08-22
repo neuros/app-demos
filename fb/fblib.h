@@ -77,7 +77,7 @@ extern int fb_mmap(fb_t *fb);
 extern void fb_dump(fb_t *fb);
 extern void fb_delete(fb_t *fb);
 extern fb_t * fb_new(const char *name);
-extern void fb_transp_set(fb_t *fb, int on);
+extern void fb_transp_set(fb_t *fb, int on, int level);
 extern void fb_transp_solor_set(fb_t *fb, int color);
 extern void fb_y_set(fb_t *fb, int y);
 extern void fb_x_set(fb_t *fb, int x);

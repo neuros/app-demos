@@ -170,9 +170,13 @@ void fb_cbtest_set(fb_t *fb, int on)
 	}
 }
 
-void fb_transp_set(fb_t *fb, int on)
+void fb_transp_set(fb_t *fb, int on, int level)
 {
-	if (ioctl(fb->fd, FBIO_TRANSP, &on) < 0)
+	struct dmfb_transparency transp;
+
+	transp.on = on;
+	transp.level = level;
+	if (ioctl(fb->fd, FBIO_TRANSP, &transp) < 0)
 	{
 		printf("couldn't set transparency to %d\n", on);
 		return;

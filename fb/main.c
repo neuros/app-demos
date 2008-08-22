@@ -8,15 +8,15 @@ static void help(void)
 	printf("fbtest <FB> <TEST> ...\n");
 	printf("Where TEST can be one of the following:\n");
 	printf("output <MODE> : Displays a picture on device FB with mode MODE (string)\n");
-	printf("                MODE is formed as [xres yres [vxres vyres]]\n");
-	printf("                If no mode is set, use current mode\n");
-	printf("enable <ON>   : Enables (1) or disables (0) the FB (int)\n");
-	printf("posx <X>      : Sets the X position of the FB (int)\n");
-	printf("posy <Y>      : Sets the X position of the FB (int)\n");
-	printf("transp <ON>   : Enables the transparency on the FB (int)\n");
-	printf("cbmode <ON>   : Enables Color Bar test mode (int)\n");
-	printf("trcol <color> : Sets the transparent color value (short int)\n");
-	printf("vout <OUTPUT> : Sets the venc output\n");
+	printf("                    MODE is formed as [xres yres [vxres vyres]]\n");
+	printf("                    If no mode is set, use current mode\n");
+	printf("enable <ON>         : Enables (1) or disables (0) the FB (int)\n");
+	printf("posx <X>            : Sets the X position of the FB (int)\n");
+	printf("posy <Y>            : Sets the X position of the FB (int)\n");
+	printf("transp <ON> <LEVEL> : Enables the transparency on the FB (int, int)\n");
+	printf("cbmode <ON>         : Enables Color Bar test mode (int)\n");
+	printf("trcol <color>       : Sets the transparent color value (short int)\n");
+	printf("vout <OUTPUT>       : Sets the venc output\n");
 	printf("FB can be osd0, osd1, vid0, vid1\n");
 	printf("OUTPUT can be composite %d, component %d, svideo %d\n",
 		FB_COMPOSITE, FB_COMPONENT, FB_SVIDEO);
@@ -75,13 +75,13 @@ static void test_cbmode(fb_t *fb, int on)
 	fb_cbtest_set(fb, on);
 }
 
-static void test_transp(fb_t *fb, int on)
+static void test_transp(fb_t *fb, int on, int level)
 {
-	printf("Running transparency test %d\n", on);
-	fb_transp_set(fb, on);
+	printf("Running transparency test %d %d\n", on, level);
+	fb_transp_set(fb, on, level);
 }
 
-static void test_trcolor(fb_t *fb, int color)
+static void test_trcol(fb_t *fb, int color)
 {
 	int i, j;
 	unsigned short int *fb_tmp;
@@ -91,17 +91,20 @@ static void test_trcolor(fb_t *fb, int color)
 	if ((fb->plane != FB_OSD0) && (fb->plane != FB_OSD1))
 		return;
 	/* draw a rectangle of that size with that color */
-	if (color > 0xff)
-		color = 0xff;
+	if (color > 0xffff)
+		color = 0xffff;
 	fb_tmp = fb->mmap;
+	printf("Using color %04x\n", color);
 	for (i = 0; i < 200; i++)
 	{
 		for (j = 0; j < 200; j++)
 		{
-			//printf("old value = %x\n", *fb_tmp2);
 			*(fb_tmp + j) = color;
 		}
-		fb_tmp += fb->fix.line_length;
+		/* FIXME in case bits_per_pixel < 8 this will SEGFAULT
+ 		 * division by 0
+ 		 */
+		fb_tmp += fb->fix.line_length / (fb->var.bits_per_pixel / 8);
 	}
 }
 
@@ -183,22 +186,28 @@ run_test:
 	/* enable transparency */
 	else if (!strcmp(argv[2], "transp"))
 	{
+		int level = 7;
+
 		if (argc < 4)
 		{
 			help();
 			return 5;
 		}
-		test_transp(fb, strtoul(argv[3], NULL, 10));
+		if (argc > 4)
+		{
+			level = strtoul(argv[4], NULL, 10);
+		}
+		test_transp(fb, strtoul(argv[3], NULL, 10), level);
 	}
 	/* enable transparency */
-	else if (!strcmp(argv[2], "trcolor"))
+	else if (!strcmp(argv[2], "trcol"))
 	{
 		if (argc < 4)
 		{
 			help();
 			return 5;
 		}
-		test_trcolor(fb, strtoul(argv[3], NULL, 10));
+		test_trcol(fb, strtoul(argv[3], NULL, 10));
 	}
 	/* enable transparency */
 	else if (!strcmp(argv[2], "vout"))

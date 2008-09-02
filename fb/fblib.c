@@ -89,7 +89,6 @@ void fb_dump(fb_t *fb)
 {
 	printf("fb device (%s)\n", fb->file);
 	printf("  plane %d\n", fb->plane);
-	printf("  mmap at %p to %p (length 0x%08x)\n", fb->mmap, (char *)fb->mmap + fb->size, fb->size);
 	printf("  size %dx%d (%dx%d)\n", fb->var.xres, fb->var.yres, fb->var.xres_virtual, fb->var.yres_virtual);
 	printf("  line_length %d\n", fb->fix.line_length);
 	printf("  bpp = %d\n", fb->var.bits_per_pixel);
@@ -143,11 +142,6 @@ fb_t * fb_new(const char *name)
 	if (minor == FBS)
 	{
 		printf("Error: No matching fb number found\n");
-		goto error;
-	}
-	if (fb_mmap(fb) < 0)
-	{
-		printf("Error: Can not map the memory\n");
 		goto error;
 	}
 	/* dump current values */
@@ -292,7 +286,7 @@ void fb_image_draw(fb_t *fb)
 {
 	fb_im_t *im = NULL;
 	int i;
-	char *fb_tmp = fb->mmap;
+	char *fb_tmp;
 	char *im_tmp;
 	int bytes;
 
@@ -310,6 +304,9 @@ void fb_image_draw(fb_t *fb)
 		printf("No suitable image for format %d\n", fb->format);
 		return;
 	}
+	if (fb_mmap(fb))
+		return;
+	fb_tmp = fb->mmap;
 	im_tmp = im->buf;
 	bytes = im->w * fb->var.bits_per_pixel / 8;
 	/* draw */

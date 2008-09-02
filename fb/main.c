@@ -7,9 +7,9 @@ static void help(void)
 {
 	printf("fbtest <FB> <TEST> ...\n");
 	printf("Where TEST can be one of the following:\n");
-	printf("output <MODE> : Displays a picture on device FB with mode MODE (string)\n");
-	printf("                    MODE is formed as [xres yres [vxres vyres]]\n");
-	printf("                    If no mode is set, use current mode\n");
+	printf("size <MODE>         : Sets the output size as MODE (string)\n");
+	printf("                      MODE is formed as [xres yres [vxres vyres]]\n");
+	printf("pic                 : Displays a picture on device FB\n");
 	printf("enable <ON>         : Enables (1) or disables (0) the FB (int)\n");
 	printf("posx <X>            : Sets the X position of the FB (int)\n");
 	printf("posy <Y>            : Sets the X position of the FB (int)\n");
@@ -24,15 +24,17 @@ static void help(void)
 }
 
 
-static void test_output(fb_t *fb, int w, int h, int vw, int vh, int set)
+static void test_pic(fb_t *fb)
+{
+	printf("Running pic test\n");
+	fb_image_draw(fb);
+}
+
+static void test_size(fb_t *fb, int w, int h, int vw, int vh)
 {
 	printf("Running output test\n");
-	if (set)
-	{
-		printf("setting to w = %d h = %d vw = %d vh = %d\n", w, h, vw, vh);
-		fb_size_set(fb, w, h, vw, vh);
-	}
-	fb_image_draw(fb);
+	printf("setting to w = %d h = %d vw = %d vh = %d\n", w, h, vw, vh);
+	fb_size_set(fb, w, h, vw, vh);
 }
 
 static void test_enable(fb_t *fb, int on)
@@ -86,6 +88,8 @@ static void test_trcol(fb_t *fb, int color)
 	int i, j;
 	unsigned short int *fb_tmp;
 
+	if (fb_mmap(fb))
+		return;
 	printf("Running transparency color test %x\n", color);
 	fb_transp_solor_set(fb, color);
 	if ((fb->plane != FB_OSD0) && (fb->plane != FB_OSD1))
@@ -120,26 +124,21 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	sprintf(fbname, "dm_%s_fb", argv[1]);
-	printf("ok1\n");
 	fb = fb_new(fbname);
-	printf("ok2\n");
 	if (!fb)
 		return 2;
 	fb_image_load();
 	/* output test */
-	if (!strcmp(argv[2], "output"))
+	if (!strcmp(argv[2], "size"))
 	{
-		int w, h, vh, vw, set = 0;
+		int w, h, vh, vw;
 
-		if (argc < 4)
-			goto run_test;
 		/* parse the mode */
-		if (argc == 4)
+		if (argc < 5)
 		{
 			help();
 			return 5;
 		}
-		set = 1;
 		w = strtoul(argv[3], NULL, 10);
 		h = strtoul(argv[4], NULL, 10);
 		if (argc > 5)
@@ -150,8 +149,7 @@ int main(int argc, char **argv)
 			vh = strtoul(argv[6], NULL, 10);
 		else
 			vh = h;
-run_test:
-		test_output(fb, w, h, vw, vh, set);
+		test_size(fb, w, h, vw, vh);
 	}
 	/* enable */
 	else if (!strcmp(argv[2], "enable"))
@@ -218,6 +216,11 @@ run_test:
 			return 5;
 		}
 		test_vout(fb, strtoul(argv[3], NULL, 10));
+	}
+	/* enable color bar mode */
+	else if (!strcmp(argv[2], "pic"))
+	{
+		test_pic(fb);
 	}
 	/* enable color bar mode */
 	else if (!strcmp(argv[2], "cbmode"))

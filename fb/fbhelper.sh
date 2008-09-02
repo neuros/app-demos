@@ -51,7 +51,7 @@ if [ "$1" == "mode" ] ; then
 	fi
 
 	# set all slave planes to the right size, the switch master plane using sysfs
-	for plane in osd1 osd0 vid1 ; do fb-demo $plane output $W $H ; done
+	for plane in osd1 osd0 vid1 ; do fb-demo $plane size $W $H ; done
 	# in hd mode we should disable the vid1 plane
 	if [ $HD -eq 1 ]; then
 		fb-demo vid1 enable 0

@@ -353,6 +353,7 @@ int main(int argc, char **argv)
 	/* capture */
 	if (video_start(v) < 0)
 		goto err;
+	fb_mmap(fb);
 	while (run)
 	{
 		int ret;

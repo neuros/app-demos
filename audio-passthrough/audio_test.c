@@ -14,11 +14,11 @@
 #define NUM_CHANNELS           2
 
 /* The gain (0-100) of the left and right channels */
-#define LEFT_GAIN              100
-#define RIGHT_GAIN             100
+#define LEFT_GAIN              55
+#define RIGHT_GAIN             55
 
 /* Number of samples to process at once */
-#define NUMSAMPLES             80
+#define NUMSAMPLES             1152
 
 /* Mono 16 bit */
 #define RAWBUFSIZE             NUMSAMPLES * 2
@@ -32,7 +32,7 @@
 int input_fd  = -1;
 int output_fd = -1;
 char *recsrc = NULL;
-int sampleRate=16000;
+int sampleRate=24000;
 
 void close_sound_device(void)
 {

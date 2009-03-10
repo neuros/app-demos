@@ -59,6 +59,13 @@ int fb_info_get(fb_t *fb)
 		printf("couldn't get fix screen info\n");
 		return -1;
 	}
+
+	if (ioctl(fb->fd, FBIO_GET_PHYS_ADDRESS, &fb->phys) < 0)
+	{
+		printf("unable to get FB physical address.\n");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -135,6 +142,7 @@ fb_t * fb_new(const char *name)
 			close(fb->fd);
 			continue;
 		}
+
 		if (!strcmp(fb->fix.id, name))
 			break;
 	}

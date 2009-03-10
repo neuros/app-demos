@@ -36,6 +36,7 @@ typedef struct fb_t {
 
 	int size;
 	void *mmap;
+	void * phys;
 
 	char *file;
 	/* position */

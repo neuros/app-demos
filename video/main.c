@@ -16,7 +16,7 @@
 
 #include "fblib.h"
 
-#define VIDEO_BUFFERS_COUNT 3
+#define VIDEO_BUFFERS_COUNT 6
 
 const char *fb_names[] = {
 	[FB_OSD0] = "dm_osd0_fb",
@@ -265,6 +265,20 @@ void help(void)
 	run = 0;
 }
 
+static int wait_4_vsync(int fd)
+{
+    int dummy;
+
+    /* Wait for vertical sync */
+    if (ioctl(fd, FBIO_WAITFORVSYNC, &dummy) == -1)
+	{
+        printf("Failed FBIO_WAITFORVSYNC.\n");
+        return -1;
+    }
+
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
 	video_t *v;
@@ -371,6 +385,8 @@ int main(int argc, char **argv)
 			perror("Error dequeueing");
 			break;
 		}
+
+		wait_4_vsync(fb->fd);
 		/* FIXME this is very harcoded, we need to check out the
  		 * format image and fb format */
 		/* send the captured image to the fb */
@@ -380,6 +396,8 @@ int main(int argc, char **argv)
 				   (unsigned char *)v->buffers[buffer.index].start + (format.fmt.pix.bytesperline * i), \
 				   format.fmt.pix.bytesperline);
 		}
+		wait_4_vsync(fb->fd);
+
 		/* send the captured frame back to the queue */
 		ret = ioctl(v->fd, VIDIOC_QBUF, &buffer);
 		if (ret < 0)

@@ -231,7 +231,7 @@ void Rszcopy_delete(Rszcopy_Handle hRszcopy)
 
 #include "fblib.h"
 
-#define VIDEO_BUFFERS_COUNT 6
+#define VIDEO_BUFFERS_COUNT 3
 
 const char *fb_names[] = {
 	[FB_OSD0] = "dm_osd0_fb",
@@ -477,6 +477,7 @@ void video_show(fb_t *fb)
 void abort_signal(int signal)
 {
 	printf("called\n");
+	run = 0;
 }
 
 void help(void)
